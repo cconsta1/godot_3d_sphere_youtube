@@ -1,0 +1,145 @@
+[gd_scene load_steps=11 format=3 uid="uid://bllfci27je26c"]
+
+[ext_resource type="Texture2D" uid="uid://rn1nn7eqat3l" path="res://Marble_Gray_002_SD/Marble_Gray_002_basecolor.jpg" id="1_ecmai"]
+[ext_resource type="Texture2D" uid="uid://bbcvq41l5snf0" path="res://Marble_Gray_002_SD/Marble_Gray_002_ambientOcclusion.jpg" id="2_e2d31"]
+[ext_resource type="Texture2D" uid="uid://dceh8ehjjjcr8" path="res://Marble_Gray_002_SD/Marble_Gray_002_height.png" id="3_t1ysg"]
+[ext_resource type="Texture2D" uid="uid://c1lucuhmnldr7" path="res://Marble_Gray_002_SD/Marble_Gray_002_normal.jpg" id="4_s5xyg"]
+[ext_resource type="Texture2D" uid="uid://or0fqsj6q6nd" path="res://Marble_Gray_002_SD/Marble_Gray_002_roughness.jpg" id="5_nvbr7"]
+[ext_resource type="Script" uid="uid://frao851vek20" path="res://mesh_instance_3d.gd" id="6_e2d31"]
+
+[sub_resource type="Environment" id="Environment_e2d31"]
+background_mode = 2
+ambient_light_source = 3
+
+[sub_resource type="Shader" id="Shader_e2d31"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.4.1.stable's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform sampler2D texture_normal : hint_roughness_normal, filter_linear_mipmap, repeat_enable;
+uniform float normal_scale : hint_range(-16.0, 16.0);
+
+uniform sampler2D texture_ambient_occlusion : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 ao_texture_channel;
+uniform float ao_light_affect : hint_range(0.0, 1.0, 0.01);
+
+uniform sampler2D texture_heightmap : hint_default_black, filter_linear_mipmap, repeat_enable;
+uniform float heightmap_scale : hint_range(-16.0, 16.0, 0.001);
+uniform int heightmap_min_layers : hint_range(1, 64);
+uniform int heightmap_max_layers : hint_range(1, 64);
+uniform vec2 heightmap_flip;
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+uniform float pulsate_speed: hint_range(0.0, 10.0) = 2.0;
+uniform float pulsate_strength: hint_range(0.0, 10.0) = 0.1;
+
+void vertex() {
+	UV = UV * uv1_scale.xy + uv1_offset.xy;
+	
+	float pulse = 1.0 + sin(TIME * pulsate_speed + VERTEX.y * 5.0) * pulsate_strength;
+	VERTEX += NORMAL * (pulse - 1.0);
+}
+
+void fragment() {
+	vec2 base_uv = UV;
+
+	{
+		// Height: Enabled
+		vec3 view_dir = normalize(normalize(-VERTEX + EYE_OFFSET) * mat3(TANGENT * heightmap_flip.x, -BINORMAL * heightmap_flip.y, NORMAL));
+		float depth = 1.0 - texture(texture_heightmap, base_uv).r;
+		vec2 ofs = base_uv - view_dir.xy * depth * heightmap_scale * 0.01;
+		base_uv = ofs;
+	}
+
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+
+	// Normal Map: Enabled
+	NORMAL_MAP = texture(texture_normal, base_uv).rgb;
+	NORMAL_MAP_DEPTH = normal_scale;
+
+	// Ambient Occlusion: Enabled
+	AO = dot(texture(texture_ambient_occlusion, base_uv), ao_texture_channel);
+	AO_LIGHT_AFFECT = ao_light_affect;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_t1ysg"]
+render_priority = 0
+shader = SubResource("Shader_e2d31")
+shader_parameter/albedo = Color(1, 1, 1, 1)
+shader_parameter/texture_albedo = ExtResource("1_ecmai")
+shader_parameter/albedo_texture_size = Vector2i(1024, 1024)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 0.8
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/texture_roughness = ExtResource("5_nvbr7")
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/texture_normal = ExtResource("4_s5xyg")
+shader_parameter/normal_scale = 1.0
+shader_parameter/texture_ambient_occlusion = ExtResource("2_e2d31")
+shader_parameter/ao_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/ao_light_affect = 0.0
+shader_parameter/texture_heightmap = ExtResource("3_t1ysg")
+shader_parameter/heightmap_scale = 5.0
+shader_parameter/heightmap_min_layers = 8
+shader_parameter/heightmap_max_layers = 32
+shader_parameter/heightmap_flip = Vector2(1, 1)
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/pulsate_speed = 0.626
+shader_parameter/pulsate_strength = 0.055
+
+[sub_resource type="SphereMesh" id="SphereMesh_8g0rp"]
+material = SubResource("ShaderMaterial_t1ysg")
+radial_segments = 512
+rings = 64
+
+[node name="Sphere3D" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_e2d31")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("SphereMesh_8g0rp")
+script = ExtResource("6_e2d31")
+spin_speed = 0.5
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.0831387, 0, 0.996538, 0, 1, 0, -0.996538, 0, 0.0831387, 1.46968, 0, 0)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_energy = 3.586
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.0519351, 0, 0.99865, 0, 1, 0, -0.99865, 0, -0.0519351, 2.08619, 0, 0)
